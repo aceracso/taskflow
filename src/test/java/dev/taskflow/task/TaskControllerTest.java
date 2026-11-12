@@ -5,8 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.util.UriComponentsBuilder;
 
 class TaskControllerTest {
+
+    private final TaskController controller =
+            new TaskController(new TaskService(new TaskSeedProperties(false, List.of())));
 
     @Test
     void listReturnsEveryTask() {
@@ -18,9 +23,29 @@ class TaskControllerTest {
 
     @Test
     void listIsEmptyWhenSeedingIsDisabled() {
-        var seed = new TaskSeedProperties(false, List.of("Ignored"));
-        TaskController controller = new TaskController(new TaskService(seed));
-
         assertEquals(0, controller.list().size());
+    }
+
+    @Test
+    void createReturns201WithLocation() {
+        var response = controller.create(new CreateTaskRequest("Write tests"),
+                UriComponentsBuilder.fromUriString("http://localhost"));
+
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertEquals("http://localhost/api/tasks/1", response.getHeaders().getLocation().toString());
+        assertEquals("Write tests", response.getBody().title());
+    }
+
+    @Test
+    void getUnknownIdReturns404() {
+        assertEquals(HttpStatus.NOT_FOUND, controller.get(99).getStatusCode());
+    }
+
+    @Test
+    void deleteTwiceReturns204Then404() {
+        controller.create(new CreateTaskRequest("Temp"), UriComponentsBuilder.newInstance());
+
+        assertEquals(HttpStatus.NO_CONTENT, controller.delete(1).getStatusCode());
+        assertEquals(HttpStatus.NOT_FOUND, controller.delete(1).getStatusCode());
     }
 }
