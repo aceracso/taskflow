@@ -32,8 +32,12 @@ public class TaskService {
                 .toList();
     }
     
-    public Optional<Task> findById(long id) {
-        return Optional.ofNullable(tasks.get(id));
+    public Task get(long id) {
+        Task task = tasks.get(id);
+        if (task == null) {
+            throw new TaskNotFoundException(id);
+        }
+        return task;
     }
 
     public Task create(String title) {
@@ -43,12 +47,17 @@ public class TaskService {
         return task;
     }
 
-    public Optional<Task> update(long id, String title, boolean done) {
-        return Optional.ofNullable(
-                tasks.computeIfPresent(id, (key, old) -> new Task(key, title, done)));
+    public Task update(long id, String title, boolean done) {
+        Task updated = tasks.computeIfPresent(id, (key, old) -> new Task(key, title, done));
+        if (updated == null) {
+            throw new TaskNotFoundException(id);
+        }
+        return updated;
     }
 
-    public boolean delete(long id) {
-        return tasks.remove(id) != null;
+    public void delete(long id) {
+        if (tasks.remove(id) == null) {
+            throw new TaskNotFoundException(id);
+        }
     }
 }

@@ -1,6 +1,7 @@
 package dev.taskflow.task;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 
@@ -37,15 +38,16 @@ class TaskControllerTest {
     }
 
     @Test
-    void getUnknownIdReturns404() {
-        assertEquals(HttpStatus.NOT_FOUND, controller.get(99).getStatusCode());
+    void getUnknownIdThrowsTaskNotFound() {
+        var ex = assertThrows(TaskNotFoundException.class, () -> controller.get(99));
+        assertEquals(99, ex.getId());
     }
 
     @Test
-    void deleteTwiceReturns204Then404() {
+    void deleteTwiceReturns204ThenThrows() {
         controller.create(new CreateTaskRequest("Temp"), UriComponentsBuilder.newInstance());
 
         assertEquals(HttpStatus.NO_CONTENT, controller.delete(1).getStatusCode());
-        assertEquals(HttpStatus.NOT_FOUND, controller.delete(1).getStatusCode());
+        assertThrows(TaskNotFoundException.class, () -> controller.delete(1));
     }
 }

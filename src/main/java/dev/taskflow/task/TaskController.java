@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/tasks")
 public class TaskController {
@@ -29,15 +31,12 @@ public class TaskController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TaskResponse> get(@PathVariable long id) {
-        return taskService.findById(id)
-                .map(TaskResponse::from)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public TaskResponse get(@PathVariable long id) {
+        return TaskResponse.from(taskService.get(id));
     }
 
     @PostMapping
-    public ResponseEntity<TaskResponse> create(@RequestBody CreateTaskRequest request,
+    public ResponseEntity<TaskResponse> create(@Valid @RequestBody CreateTaskRequest request,
                                                UriComponentsBuilder uriBuilder) {
         Task task = taskService.create(request.title());
         URI location = uriBuilder.path("/api/tasks/{id}").buildAndExpand(task.id()).toUri();
@@ -45,18 +44,14 @@ public class TaskController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<TaskResponse> update(@PathVariable long id,
-                                               @RequestBody UpdateTaskRequest request) {
-        return taskService.update(id, request.title(), request.done())
-                .map(TaskResponse::from)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public TaskResponse update(@PathVariable long id,
+                               @Valid @RequestBody UpdateTaskRequest request) {
+        return TaskResponse.from(taskService.update(id, request.title(), request.done()));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable long id) {
-        return taskService.delete(id)
-                ? ResponseEntity.noContent().build()
-                : ResponseEntity.notFound().build();
+        taskService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }
