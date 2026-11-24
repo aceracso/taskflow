@@ -1,5 +1,6 @@
 package dev.taskflow.task;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -20,6 +21,7 @@ public class Task {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
+	@Column(length = 200, nullable = false)
 	private String title;
 	private boolean done;
 
