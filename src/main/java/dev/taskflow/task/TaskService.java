@@ -1,25 +1,20 @@
 package dev.taskflow.task;
-
-import java.util.Comparator;
+    
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 @Service
 public class TaskService {
 
-
-    private final Map<Long, Task> tasks = new ConcurrentHashMap<>();
-    private final AtomicLong nextId = new AtomicLong(1);
+    private final TaskRepository repository;
 
     //private final List<Task> tasks = new ArrayList<>();
 
-    public TaskService(TaskSeedProperties seed) {
-        if (seed.enabled()) {
+    public TaskService(TaskRepository repository, TaskSeedProperties seed) {
+        this.repository = repository;
+        if (seed.enabled() && repository.count() == 0) {
             for (String title : seed.titles()) {
                 create(title);
             }
@@ -27,37 +22,25 @@ public class TaskService {
     }
 
     public List<Task> findAll() {
-        return tasks.values().stream()
-                .sorted(Comparator.comparingLong(Task::id))
-                .toList();
+        return repository.findAll(Sort.by("id"));
     }
     
     public Task get(long id) {
-        Task task = tasks.get(id);
-        if (task == null) {
-            throw new TaskNotFoundException(id);
-        }
-        return task;
+        return repository.findById(id).orElseThrow(() -> new TaskNotFoundException(id));
     }
 
     public Task create(String title) {
-        long id = nextId.getAndIncrement();
-        Task task = new Task(id, title, false);
-        tasks.put(id, task);
-        return task;
+        return repository.save(new Task(title));
     }
 
     public Task update(long id, String title, boolean done) {
-        Task updated = tasks.computeIfPresent(id, (key, old) -> new Task(key, title, done));
-        if (updated == null) {
-            throw new TaskNotFoundException(id);
-        }
-        return updated;
+        Task updated = get(id);
+        updated.rename(title);
+        updated.setDone(done);
+        return repository.save(updated);
     }
 
     public void delete(long id) {
-        if (tasks.remove(id) == null) {
-            throw new TaskNotFoundException(id);
-        }
+        repository.delete(get(id));
     }
 }
